@@ -12,6 +12,7 @@ from typing import Dict, List, Optional
 import logging
 import time
 import re
+import os
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -381,12 +382,88 @@ class PegadaianScraperSelenium:
         filepath = f"data/{filename}"
         
         try:
+            # Buat direktori data jika belum ada
+            os.makedirs("data", exist_ok=True)
+            
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             logger.info(f"Data saved to {filepath}")
             return filepath
         except Exception as e:
             logger.error(f"Error saving data: {e}")
+            return ""
+    
+    def save_to_csv(self, data: Dict, filename: str = None) -> str:
+        """
+        Menyimpan data ke file CSV
+        """
+        if not filename:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"pegadaian_data_{timestamp}.csv"
+        
+        filepath = f"data/{filename}"
+        
+        try:
+            # Buat direktori data jika belum ada
+            os.makedirs("data", exist_ok=True)
+            
+            # Siapkan data untuk CSV
+            csv_data = []
+            
+            # Gold prices
+            if 'gold_prices' in data and data['gold_prices']:
+                gold_data = data['gold_prices']
+                csv_data.append({
+                    'type': 'gold_price',
+                    'timestamp': data.get('scrape_timestamp', ''),
+                    'item': 'gold_buy',
+                    'value': gold_data.get('buy_price', ''),
+                    'last_updated': gold_data.get('last_updated', '')
+                })
+                csv_data.append({
+                    'type': 'gold_price',
+                    'timestamp': data.get('scrape_timestamp', ''),
+                    'item': 'gold_sell',
+                    'value': gold_data.get('sell_price', ''),
+                    'last_updated': gold_data.get('last_updated', '')
+                })
+            
+            # Company stats
+            if 'company_stats' in data and data['company_stats']:
+                stats = data['company_stats']
+                for key, value in stats.items():
+                    if key != 'timestamp':
+                        csv_data.append({
+                            'type': 'company_stat',
+                            'timestamp': data.get('scrape_timestamp', ''),
+                            'item': key,
+                            'value': str(value),
+                            'last_updated': stats.get('timestamp', '')
+                        })
+            
+            # News
+            if 'latest_news' in data and data['latest_news']:
+                for i, news in enumerate(data['latest_news']):
+                    csv_data.append({
+                        'type': 'news',
+                        'timestamp': data.get('scrape_timestamp', ''),
+                        'item': f'news_{i+1}',
+                        'value': news.get('title', ''),
+                        'last_updated': news.get('date', '')
+                    })
+            
+            # Simpan ke CSV
+            if csv_data:
+                df = pd.DataFrame(csv_data)
+                df.to_csv(filepath, index=False, encoding='utf-8')
+                logger.info(f"Data saved to {filepath}")
+                return filepath
+            else:
+                logger.warning("No data to save to CSV")
+                return ""
+                
+        except Exception as e:
+            logger.error(f"Error saving CSV data: {e}")
             return ""
     
     def close(self):
