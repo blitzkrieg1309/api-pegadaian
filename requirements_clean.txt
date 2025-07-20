@@ -1,0 +1,15 @@
+# Core web scraping dependencies
+requests==2.32.4
+beautifulsoup4==4.13.4
+lxml==6.0.0
+selenium==4.34.2
+
+# API framework
+fastapi==0.116.1
+uvicorn==0.35.0
+
+# Data processing
+pandas==2.3.1
+
+# Optional: Environment variables
+python-dotenv==1.0.0
